@@ -1,0 +1,67 @@
+from fastapi import FastAPI, Request, UploadFile
+import uvicorn
+import requests, socket, platform
+from routers import aws, azure, pokemon, awsrawoutput, azure_routes
+from fastapi.templating import Jinja2Templates
+import boto3
+import json
+import os
+import requests
+import datetime
+import mysql.connector
+from dotenv import load_dotenv, find_dotenv
+from azure.keyvault.secrets import SecretClient
+from azure.identity import DefaultAzureCredential
+from azure.storage.blob.aio import BlobServiceClient
+from azure.mgmt.compute import ComputeManagementClient
+from platform import python_version
+from prometheus_fastapi_instrumentator import Instrumentator
+
+load_dotenv()
+
+app = FastAPI()
+
+Instrumentator().instrument(app).expose(app)
+
+con_name = os.uname().nodename
+b_name = os.getenv("DEPLOYMENT_BRANCH")
+app_name = os.getenv("APP_NAME")
+app_version = os.getenv("APP_VERSION")
+if b_name:
+    branch_name = b_name
+else:
+    branch_name = 'NOT-A-GIT-REPO'
+
+if app_name is None:
+    app_name = "FASTAPI-DEMO-APP-DEFAULT"
+else:
+    app_name = app_name
+
+if app_version is None:
+    app_version = "TAKING_DEFAULT_AS_1_0_0"
+else:
+    app_version = app_version
+
+python_version = os.getenv("PYTHON_VERSION", "Ubuntu_Default_3_10_12")
+
+IP = requests.get('https://api.ipify.org').content.decode('utf8')
+
+templates = Jinja2Templates(directory="templates")
+
+@app.get("/")
+def homepage(request: Request):
+    return templates.TemplateResponse("index.html", {
+        "request": request, 
+        "name": app_name,
+        "version": app_version,
+        "container_id": con_name,
+        "python_version": python_version,
+        "IP": IP,
+        "branch_name": branch_name
+        })
+
+app.include_router(awsrawoutput.router)
+app.include_router(aws.router)
+app.include_router(azure.router)
+app.include_router(pokemon.router)
+app.include_router(azure_routes.router)
