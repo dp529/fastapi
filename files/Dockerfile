@@ -1,4 +1,4 @@
-ARG BASE_IMAGE=python
+ARG BASE_IMAGE=python:3.12-slim
 ARG UBUNTU_VERSION=3.12-slim
 FROM ${BASE_IMAGE}:${UBUNTU_VERSION}
 LABEL author="Dileep Mundluri" email="dp@gmail.com"
