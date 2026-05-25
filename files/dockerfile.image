@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # 2. Pre-compile all requirements into a local wheels folder
 COPY requirements.txt .
-RUN pip wheel --no-cache-dir --no-deps --wheel-dir /build/wheels -r requirements.txt
+RUN pip wheel --no-cache-dir --wheel-dir /build/wheels -r requirements.txt
 
 # 3. Download and extract Terraform cleanly to a staging directory
 ARG PACKAGE_VERSION=1.15.4
