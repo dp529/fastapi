@@ -1,0 +1,60 @@
+# ==========================================
+# STAGE 1: The Builder (Heavy Component compilation)
+# ==========================================
+FROM python:3.12-slim AS builder
+
+WORKDIR /build
+
+# 1. Install temporary compiler tools required to build heavy wheels
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    unzip \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# 2. Pre-compile all requirements into a local wheels folder
+COPY requirements.txt .
+RUN pip wheel --no-cache-dir --no-deps --wheel-dir /build/wheels -r requirements.txt
+
+# 3. Download and extract Terraform cleanly to a staging directory
+ARG PACKAGE_VERSION=1.15.4
+RUN mkdir /build/bin && \
+    curl -sSL https://hashicorp.com{PACKAGE_VERSION}/terraform_${PACKAGE_VERSION}_linux_amd64.zip -o terraform.zip \
+    && unzip terraform.zip -d /build/bin/ \
+    && rm terraform.zip
+
+
+# ==========================================
+# STAGE 2: The Final Runner (Ultra Lightweight)
+# ==========================================
+FROM python:3.12-slim AS runner
+
+# Create a non-root system user for production security best practices
+RUN useradd --create-home appuser
+WORKDIR /app
+
+# 1. Bring over only necessary lightweight tools for operations
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    jq net-tools tree \
+    && rm -rf /var/lib/apt/lists/*
+
+# 2. Copy the pre-compiled Python wheels from Stage 1 and install them cleanly
+COPY --from=builder /build/wheels /wheels
+RUN pip install --no-cache-dir /wheels/* && rm -rf /wheels
+
+# 3. Copy the Terraform binary from Stage 1 into the system path
+COPY --from=builder /build/bin/terraform /usr/local/bin/terraform
+
+# 4. Copy your application file directories
+COPY templates templates
+COPY routers routers
+COPY main.py main.py
+
+# Switch runtime context away from root execution to our standard user
+RUN chown -R appuser:appuser /app
+USER appuser
+
+EXPOSE 80
+
+ENTRYPOINT ["uvicorn", "main:app", "--host", "0.0.0.0"]
+CMD ["--port", "80"]
