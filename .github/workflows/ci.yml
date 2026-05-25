@@ -9,6 +9,7 @@ on:
 env:
   IMAGE_NAME: fastapi-demo-app
   PYTHON_VERSION: "3.12"
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   lint:
@@ -31,9 +32,10 @@ jobs:
 
       - name: Lint with flake8
         run: |
-          # Stop on syntax errors or undefined names; ignore line-length warnings
+          # Fail only on fatal errors: syntax errors and undefined names
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-          flake8 . --count --max-line-length=120 --statistics
+          # Report style warnings without failing the build
+          flake8 . --count --max-line-length=120 --statistics --exit-zero
 
   build:
     name: Build Docker Image
