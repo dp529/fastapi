@@ -19,9 +19,10 @@ RUN pip wheel --no-cache-dir --no-deps --wheel-dir /build/wheels -r requirements
 # 3. Download and extract Terraform cleanly to a staging directory
 ARG PACKAGE_VERSION=1.15.4
 RUN mkdir /build/bin && \
-    curl -sSL https://hashicorp.com{PACKAGE_VERSION}/terraform_${PACKAGE_VERSION}_linux_amd64.zip -o terraform.zip \
+    curl -sSL https://releases.hashicorp.com/terraform/${PACKAGE_VERSION}/terraform_${PACKAGE_VERSION}_linux_amd64.zip -o terraform.zip \
     && unzip terraform.zip -d /build/bin/ \
     && rm terraform.zip
+
 
 
 # ==========================================
