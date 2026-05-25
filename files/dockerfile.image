@@ -41,7 +41,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # 2. Copy the pre-compiled Python wheels from Stage 1 and install them cleanly
 COPY --from=builder /build/wheels /wheels
-RUN pip install --no-cache-dir /wheels/* && rm -rf /wheels
+COPY requirements.txt .
+RUN pip install --no-cache-dir --no-index --find-links=/wheels -r requirements.txt && rm -rf /wheels
 
 # 3. Copy the Terraform binary from Stage 1 into the system path
 COPY --from=builder /build/bin/terraform /usr/local/bin/terraform
